@@ -18,37 +18,32 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up JDK 17 (for Gradle)
+    - name: Set up JDK ${{ matrix.java }}
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: ${{ matrix.java }}
         distribution: 'temurin'
-        cache: 'gradle'
+        cache: 'maven'
     
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: 8.5
-    
-    - name: Build with Gradle (JDK 8)
+    - name: Build with Maven (JDK 8)
       if: matrix.java == 8
       shell: bash
-      run: gradle clean build -PbuildProfile=jre8 -x test
+      run: mvn clean package -Pjre8 -DskipTests
     
-    - name: Build with Gradle (JDK 11)
+    - name: Build with Maven (JDK 11)
       if: matrix.java == 11
       shell: bash
-      run: gradle clean build -PbuildProfile=jre11 -x test
+      run: mvn clean package -Pjre11 -DskipTests
     
     - name: Run tests (JDK 8)
       if: matrix.java == 8
       shell: bash
-      run: gradle test -PbuildProfile=jre8
+      run: mvn test -Pjre8
     
     - name: Run tests (JDK 11)
       if: matrix.java == 11
       shell: bash
-      run: gradle test -PbuildProfile=jre11
+      run: mvn test -Pjre11
     
     - name: Upload build artifacts (JDK 8)
       if: matrix.java == 8
@@ -56,7 +51,8 @@ jobs:
       with:
         name: mssql-jdbc-jre8-${{ matrix.os }}
         path: |
-          build/libs/mssql-jdbc-*.jre8.jar
+          target/mssql-jdbc-*.jre8.jar
+          target/mssql-jdbc-*-sources.jar
         retention-days: 30
     
     - name: Upload build artifacts (JDK 11)
@@ -65,7 +61,8 @@ jobs:
       with:
         name: mssql-jdbc-jre11-${{ matrix.os }}
         path: |
-          build/libs/mssql-jdbc-*.jre11.jar
+          target/mssql-jdbc-*.jre11.jar
+          target/mssql-jdbc-*-sources.jar
         retention-days: 30
     
     - name: Upload test results
@@ -74,7 +71,7 @@ jobs:
       with:
         name: test-results-jre${{ matrix.java }}-${{ matrix.os }}
         path: |
-          build/test-results/
-          build/reports/tests/
+          target/surefire-reports/
+          target/test-results/
         retention-days: 30
 
