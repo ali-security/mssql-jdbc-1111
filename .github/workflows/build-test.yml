@@ -1,0 +1,79 @@
+name: Build and Test
+
+on:
+  push:
+
+jobs:
+  build-and-test:
+    name: Build and Test (JDK ${{ matrix.java }}, ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        java: [8, 11]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: 'temurin'
+        cache: 'maven'
+    
+    - name: Build with Maven (JDK 8)
+      if: matrix.java == 8
+      shell: bash
+      run: mvn clean package -Pjre8 -DskipTests
+    
+    - name: Build with Maven (JDK 11)
+      if: matrix.java == 11
+      shell: bash
+      run: mvn clean package -Pjre11 -DskipTests
+    
+    - name: Run tests (JDK 8)
+      if: matrix.java == 8
+      shell: bash
+      run: mvn test -Pjre8
+      continue-on-error: true
+    
+    - name: Run tests (JDK 11)
+      if: matrix.java == 11
+      shell: bash
+      run: mvn test -Pjre11
+      continue-on-error: true
+    
+    - name: Upload build artifacts (JDK 8)
+      if: matrix.java == 8
+      uses: actions/upload-artifact@v4
+      with:
+        name: mssql-jdbc-jre8-${{ matrix.os }}
+        path: |
+          target/mssql-jdbc-*.jre8.jar
+          target/mssql-jdbc-*-sources.jar
+        retention-days: 30
+    
+    - name: Upload build artifacts (JDK 11)
+      if: matrix.java == 11
+      uses: actions/upload-artifact@v4
+      with:
+        name: mssql-jdbc-jre11-${{ matrix.os }}
+        path: |
+          target/mssql-jdbc-*.jre11.jar
+          target/mssql-jdbc-*-sources.jar
+        retention-days: 30
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-jre${{ matrix.java }}-${{ matrix.os }}
+        path: |
+          target/surefire-reports/
+          target/test-results/
+        retention-days: 30
+
