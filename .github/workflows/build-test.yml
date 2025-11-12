@@ -23,29 +23,30 @@ jobs:
       with:
         java-version: ${{ matrix.java }}
         distribution: 'temurin'
-        cache: 'maven'
+        cache: 'gradle'
     
-    - name: Build with Maven (JDK 8)
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+    
+    - name: Build with Gradle (JDK 8)
       if: matrix.java == 8
       shell: bash
-      run: mvn clean package -Pjre8 -DskipTests
+      run: gradle clean build -PbuildProfile=jre8 -x test
     
-    - name: Build with Maven (JDK 11)
+    - name: Build with Gradle (JDK 11)
       if: matrix.java == 11
       shell: bash
-      run: mvn clean package -Pjre11 -DskipTests
+      run: gradle clean build -PbuildProfile=jre11 -x test
     
     - name: Run tests (JDK 8)
       if: matrix.java == 8
       shell: bash
-      run: mvn test -Pjre8
-      continue-on-error: true
+      run: gradle test -PbuildProfile=jre8
     
     - name: Run tests (JDK 11)
       if: matrix.java == 11
       shell: bash
-      run: mvn test -Pjre11
-      continue-on-error: true
+      run: gradle test -PbuildProfile=jre11
     
     - name: Upload build artifacts (JDK 8)
       if: matrix.java == 8
@@ -53,8 +54,7 @@ jobs:
       with:
         name: mssql-jdbc-jre8-${{ matrix.os }}
         path: |
-          target/mssql-jdbc-*.jre8.jar
-          target/mssql-jdbc-*-sources.jar
+          build/libs/mssql-jdbc-*.jre8.jar
         retention-days: 30
     
     - name: Upload build artifacts (JDK 11)
@@ -63,8 +63,7 @@ jobs:
       with:
         name: mssql-jdbc-jre11-${{ matrix.os }}
         path: |
-          target/mssql-jdbc-*.jre11.jar
-          target/mssql-jdbc-*-sources.jar
+          build/libs/mssql-jdbc-*.jre11.jar
         retention-days: 30
     
     - name: Upload test results
@@ -73,7 +72,7 @@ jobs:
       with:
         name: test-results-jre${{ matrix.java }}-${{ matrix.os }}
         path: |
-          target/surefire-reports/
-          target/test-results/
+          build/test-results/
+          build/reports/tests/
         retention-days: 30
 
