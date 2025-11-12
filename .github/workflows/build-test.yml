@@ -11,8 +11,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
         java: [8, 11]
+    
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          ACCEPT_EULA: Y
+          SA_PASSWORD: YourStrong@Passw0rd
+          MSSQL_PID: Developer
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong@Passw0rd -Q 'SELECT 1' || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
     
     steps:
     - name: Checkout code
@@ -35,14 +50,21 @@ jobs:
       shell: bash
       run: mvn clean package -Pjre11 -DskipTests
     
+    - name: Wait for SQL Server to be ready
+      run: sleep 15
+    
     - name: Run tests (JDK 8)
       if: matrix.java == 8
       shell: bash
+      env:
+        mssql_jdbc_test_connection_properties: jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=YourStrong@Passw0rd;encrypt=true;trustServerCertificate=true;
       run: mvn test -Pjre8
     
     - name: Run tests (JDK 11)
       if: matrix.java == 11
       shell: bash
+      env:
+        mssql_jdbc_test_connection_properties: jdbc:sqlserver://localhost:1433;databaseName=master;user=sa;password=YourStrong@Passw0rd;encrypt=true;trustServerCertificate=true;
       run: mvn test -Pjre11
     
     - name: Upload build artifacts (JDK 8)
